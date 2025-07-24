@@ -16,7 +16,7 @@
   <canvas id="progressChart" width="400" height="200"></canvas>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxWiz-_Koqs7kTfKge78a0jiQ6Cmcd95MjJhsI4YV4nNih6Vu7YKy7deSvbzR1n8GyC1w/exec'; // <- paste your Apps Script web URL here
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxWiz-_Koqs7kTfKge78a0jiQ6Cmcd95MjJhsI4YV4nNih6Vu7YKy7deSvbzR1n8GyC1w/exec'; // Replace this with your actual Google Apps Script URL
 
     const ctx = document.getElementById('progressChart').getContext('2d');
     let chart;
@@ -29,7 +29,7 @@
           labels: ['Applied', 'Remaining'],
           datasets: [{
             data: [total, remaining],
-            backgroundColor: ['#4caf50', '#ccc']
+            backgroundColor: ['#4caf50', '#e0e0e0']
           }]
         },
         options: {
@@ -67,7 +67,7 @@
       });
     });
 
-    // Initial fetch
+    // Load current data on page load
     fetchProgress();
   </script>
 </body>

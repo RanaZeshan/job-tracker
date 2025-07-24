@@ -16,59 +16,47 @@
   <canvas id="progressChart" width="400" height="200"></canvas>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxWiz-_Koqs7kTfKge78a0jiQ6Cmcd95MjJhsI4YV4nNih6Vu7YKy7deSvbzR1n8GyC1w/exec'; // Replace this with your actual Google Apps Script URL
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxWiz-_Koqs7kTfKge78a0jiQ6Cmcd95MjJhsI4YV4nNih6Vu7YKy7deSvbzR1n8GyC1w/exec';
 
-    const ctx = document.getElementById('progressChart').getContext('2d');
-    let chart;
+  document.querySelector('form').addEventListener('submit', async function (e) {
+    e.preventDefault();
 
-    function drawChart(total, remaining) {
-      if (chart) chart.destroy();
-      chart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Applied', 'Remaining'],
-          datasets: [{
-            data: [total, remaining],
-            backgroundColor: ['#4caf50', '#e0e0e0']
-          }]
-        },
-        options: {
-          plugins: {
-            title: {
-              display: true,
-              text: `Progress: ${total} / 600`
-            }
-          }
-        }
-      });
+    const value = parseInt(document.getElementById('appliedToday').value);
+    if (!value || value < 1) return;
+
+    try {
+      const response = await fetch(`${API_URL}?appliedToday=${value}`);
+      const data = await response.json();
+
+      document.getElementById('applied').innerText = data.total;
+      document.getElementById('remaining').innerText = data.remaining;
+
+      const percent = (data.total / 600) * 100;
+      const progressBar = document.getElementById('progress-bar');
+      progressBar.style.width = percent + '%';
+      progressBar.innerText = Math.floor(percent) + '%';
+    } catch (err) {
+      console.error('Error:', err);
     }
+  });
 
-    function fetchProgress() {
-      fetch(API_URL)
-        .then(res => res.json())
-        .then(data => {
-          drawChart(data.total, data.remaining);
-        });
+  // Load current progress on page load
+  window.onload = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+
+      document.getElementById('applied').innerText = data.total;
+      document.getElementById('remaining').innerText = data.remaining;
+
+      const percent = (data.total / 600) * 100;
+      const progressBar = document.getElementById('progress-bar');
+      progressBar.style.width = percent + '%';
+      progressBar.innerText = Math.floor(percent) + '%';
+    } catch (err) {
+      console.error('Fetch on load failed:', err);
     }
-
-    document.getElementById('jobForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const appliedToday = document.getElementById('appliedToday').value;
-
-      fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ appliedToday }),
-        headers: { 'Content-Type': 'application/json' }
-      })
-      .then(res => res.json())
-      .then(data => {
-        drawChart(data.total, data.remaining);
-        document.getElementById('jobForm').reset();
-      });
-    });
-
-    // Load current data on page load
-    fetchProgress();
-  </script>
+  };
+</script>
 </body>
 </html>

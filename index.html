@@ -1,9 +1,7 @@
-
-
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Job Application Tracker BTS</title>
+  <title>Job Application Tracker</title>
   <style>
     body {
       font-family: Arial;
@@ -71,7 +69,7 @@
     let total = parseInt(localStorage.getItem('jobProgress')) || 0;
     let history = JSON.parse(localStorage.getItem('jobHistory')) || {};
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiVMfxq4g4gqdqu1YwxN2PPCTx8mIA3LeJovkcDyDbeXsFILtJ2z3uvaPtHMTmgWHzpA/exec"; // 👈 Replace with your Web App URL
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiVMfxq4g4gqdqu1YwxN2PPCTx8mIA3LeJovkcDyDbeXsFILtJ2z3uvaPtHMTmgWHzpA/exec";
 
     function updateProgressBar() {
       const percentage = Math.min((total / goal) * 100, 100).toFixed(1);
@@ -104,17 +102,22 @@
         updateHistoryTable();
         input.value = '';
 
-        // Send to Google Sheets
+        // Send to Google Sheets using URL-encoded form data
+        const formData = new URLSearchParams();
+        formData.append("date", today);
+        formData.append("jobs", value);
+
         fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
-          body: JSON.stringify({ date: today, jobs: value }),
-          headers: { 'Content-Type': 'application/json' }
-        }).then(res => res.json())
-          .then(response => {
-            console.log('Success:', response);
-          }).catch(error => {
-            console.error('Error!', error.message);
-          });
+          body: formData
+        })
+        .then(res => res.json())
+        .then(response => {
+          console.log('Success:', response);
+        })
+        .catch(error => {
+          console.error('Error!', error.message);
+        });
       }
     }
 

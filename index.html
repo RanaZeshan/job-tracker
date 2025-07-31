@@ -1,62 +1,138 @@
+
+
 <!DOCTYPE html>
 <html>
 <head>
   <title>Job Application Tracker</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    .progress-bar-container {
+      width: 100%;
+      background-color: #ddd;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+    .progress-bar {
+      width: 0%;
+      height: 30px;
+      background-color: #4caf50;
+      text-align: center;
+      line-height: 30px;
+      color: white;
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      text-align: center;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+    }
+  </style>
 </head>
 <body>
+
   <h2>🎯 Job Application Tracker</h2>
-  <p>Total Goal: 600 jobs</p>
+  <p>Goal: <strong>400 applications this week</strong></p>
 
-  <form id="jobForm">
-    <input type="number" id="appliedToday" placeholder="Jobs applied today" required>
-    <button type="submit">Submit</button>
-  </form>
+  <label for="dailyInput">Jobs applied today:</label>
+  <input type="number" id="dailyInput" min="0" placeholder="Enter number">
+  <button onclick="addProgress()">Add</button>
+  <button onclick="resetProgress()" style="background-color:red; color:white;">Reset Week</button>
 
-  <canvas id="progressChart" width="400" height="200"></canvas>
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progressBar">0%</div>
+  </div>
+
+  <p>Total Applied: <span id="total">0</span> / 400</p>
+
+  <h3>📅 Daily History</h3>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>Jobs Applied</th></tr>
+    </thead>
+    <tbody id="historyTable"></tbody>
+  </table>
 
   <script>
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxWiz-_Koqs7kTfKge78a0jiQ6Cmcd95MjJhsI4YV4nNih6Vu7YKy7deSvbzR1n8GyC1w/exec';
+    const goal = 400;
+    let total = parseInt(localStorage.getItem('jobProgress')) || 0;
+    let history = JSON.parse(localStorage.getItem('jobHistory')) || {};
 
-  document.querySelector('form').addEventListener('submit', async function (e) {
-    e.preventDefault();
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiVMfxq4g4gqdqu1YwxN2PPCTx8mIA3LeJovkcDyDbeXsFILtJ2z3uvaPtHMTmgWHzpA/exec"; // 👈 Replace with your Web App URL
 
-    const value = parseInt(document.getElementById('appliedToday').value);
-    if (!value || value < 1) return;
-
-    try {
-      const response = await fetch(`${API_URL}?appliedToday=${value}`);
-      const data = await response.json();
-
-      document.getElementById('applied').innerText = data.total;
-      document.getElementById('remaining').innerText = data.remaining;
-
-      const percent = (data.total / 600) * 100;
-      const progressBar = document.getElementById('progress-bar');
-      progressBar.style.width = percent + '%';
-      progressBar.innerText = Math.floor(percent) + '%';
-    } catch (err) {
-      console.error('Error:', err);
+    function updateProgressBar() {
+      const percentage = Math.min((total / goal) * 100, 100).toFixed(1);
+      document.getElementById('progressBar').style.width = percentage + '%';
+      document.getElementById('progressBar').textContent = percentage + '%';
+      document.getElementById('total').textContent = total;
     }
-  });
 
-  // Load current progress on page load
-  window.onload = async () => {
-    try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-
-      document.getElementById('applied').innerText = data.total;
-      document.getElementById('remaining').innerText = data.remaining;
-
-      const percent = (data.total / 600) * 100;
-      const progressBar = document.getElementById('progress-bar');
-      progressBar.style.width = percent + '%';
-      progressBar.innerText = Math.floor(percent) + '%';
-    } catch (err) {
-      console.error('Fetch on load failed:', err);
+    function updateHistoryTable() {
+      const table = document.getElementById('historyTable');
+      table.innerHTML = '';
+      const dates = Object.keys(history).sort((a, b) => new Date(a) - new Date(b));
+      dates.forEach(date => {
+        table.innerHTML += `<tr><td>${date}</td><td>${history[date]}</td></tr>`;
+      });
     }
-  };
-</script>
+
+    function addProgress() {
+      const input = document.getElementById('dailyInput');
+      const value = parseInt(input.value);
+      if (!isNaN(value) && value > 0) {
+        total += value;
+        localStorage.setItem('jobProgress', total);
+
+        const today = new Date().toISOString().split('T')[0];
+        history[today] = (history[today] || 0) + value;
+        localStorage.setItem('jobHistory', JSON.stringify(history));
+
+        updateProgressBar();
+        updateHistoryTable();
+        input.value = '';
+
+        // Send to Google Sheets
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ date: today, jobs: value }),
+          headers: { 'Content-Type': 'application/json' }
+        }).then(res => res.json())
+          .then(response => {
+            console.log('Success:', response);
+          }).catch(error => {
+            console.error('Error!', error.message);
+          });
+      }
+    }
+
+    function resetProgress() {
+      if (confirm("Are you sure you want to reset the progress for a new week?")) {
+        total = 0;
+        history = {};
+        localStorage.removeItem('jobProgress');
+        localStorage.removeItem('jobHistory');
+        updateProgressBar();
+        updateHistoryTable();
+      }
+    }
+
+    // Initial Load
+    updateProgressBar();
+    updateHistoryTable();
+  </script>
+
 </body>
 </html>
